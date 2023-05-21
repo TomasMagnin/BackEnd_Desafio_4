@@ -1,3 +1,15 @@
-<h1>Products</h1>
-
-<p>{{dataProducts}}</p>
+<div class="row product justify-content-evenly">
+    <h1>LISTADO DE PRODUCTOS</h1>
+    {{#each products}}
+    <div class="card product__container" style="width: 14rem; margin-top: 5px;">
+        <div style="margin-top: 10px; width:200px; height:200px;">
+            <img src={{this.thumbnail}} class="card-img-top" alt="foto de Product {{this.id}}">
+        </div>
+        <div class="card-body">
+            <h3 class="card-title">{{this.title}}</h3>
+            <p class="card-text">{{this.description}}</p>
+            <p class="card-text">$ {{this.price}}</p>
+        </div>
+    </div>
+    {{/each}}
+</div>

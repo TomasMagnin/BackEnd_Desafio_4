@@ -1,20 +1,46 @@
-<h1>Real Time Products</h1>
-
-<div>
-    <input id="inputAdd" type="text">
-    <button id="btnAdd">Add Product</button>
+<div  id="">
+    <form id="form" action="/api/products" method="post" enctype="multipart/form-data">
+        <div class="form-group" style="margin-left: 20px;">
+            <div class="row">
+                <div class="col"><input style="margin-top: 10px" type="text" class="form-control" placeholder="Ingrese Título" value="" name="title" required></div>
+                <div class="col"><input style="margin-top: 10px" type="text" class="form-control" placeholder="Ingrese Descripción" value="" name="description" required></div>
+                <div class="col"><input style="margin-top: 10px" type="text" class="form-control" placeholder="Ingrese Categoría" value="" name="category" required></div>
+                <input style="margin-top: 10px" type="hidden" class="form-control" value="true" name="status" required>
+            </div>
+            <div class="row">
+                <div class="col"><input style="margin-top: 10px" type="code" class="form-control" placeholder="Ingrese Código" value="" name="code" required></div>
+                <div class="col"><input style="margin-top: 10px" type="number" class="form-control" placeholder="Ingrese Precio" value="" name="price" required></div>
+                <div class="col"><input style="margin-top: 10px" type="number" class="form-control" placeholder="Ingrese Stock" value="" name="stock" required></div>
+            </div>
+            <div class="row">
+                <div class="col"><input style="margin-top: 10px" type="text" class="form-control" placeholder="Ingrese URL de la imagen"name="thumbnail" required></div>
+            </div>
+            <button style="margin-top: 10px" type="submit" class="btn btn-primary btn-lg btn-block">Guardar</button>
+        </div>
+    </form>
+    <form id="deleteForm" class="form-group form-row" action="/api/products" method="delete">
+        <div class="form-group" style="margin-left: 20px;">
+            <div class="row">
+                <div class="col"><input type="text" style="margin-top: 10px;" class="form-control col-3" placeholder="Ingrese ID del producto a ELIMINAR" name="id"></div>
+                <div class="col"><button type="submit" style="margin-top: 10px" class="btn btn-primary btn-lg btn-block">Eliminar</button></div>
+            </div>
+        </div>
+    </form>
+    <h1>LISTADO DE PRODUCTOS</h1>
+    <div class="row product justify-content-evenly" id="productList">
+        {{#each products}}
+        <div class="card product__container" style="width: 14rem; margin-top: 5px;">
+            <div style="margin-top: 10px; width:200px; height:200px;">
+                <img src={{this.thumbnail}} class="card-img-top" alt="foto de Product {{this.id}}">
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">{{this.title}}</h3>
+                <p class="card-text">{{this.description}}</p>
+                <p class="card-text">$ {{this.price}}</p>
+            </div>
+        </div>
+        {{/each}}
+    </div>
 </div>
-
-<br>
-
-<div>
-    <input id="inputDelete" type="text">
-    <button id="btnDelete">Delete Product</button>
-</div>
-
-<br>
-
-<p></p>
-
-<script src="/socket.io/socket.io.js"></script> {{!-- Este script realiza el handshake, y abre los puertos para la comunicacion. --}}
+<script src="/socket.io/socket.io.js"></script>
 <script src="/js/index.js"></script>

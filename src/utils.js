@@ -3,7 +3,7 @@ import multer from "multer";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname + "/public"));    // Aca seteamos el destino de la de los archivos que suba es es __dirname(la ruta absoluta C:/src/public...) y la carpeta donde se sube todo.
+        cb(null, path.join(__dirname + "/public"));    // El join()función para combinar dos rutas, Aca seteamos el destino de la de los archivos que suba es es __dirname(la ruta absoluta C:/src/public...) y la carpeta donde se sube todo.
     },
 
     filename: (req, file, cb) => {

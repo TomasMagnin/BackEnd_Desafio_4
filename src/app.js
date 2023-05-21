@@ -1,76 +1,87 @@
-import express from "express";
+import express from "express";                                    // Importamos el modulo de servidor en express.
+import { Server } from "socket.io";
 import handlebars from "express-handlebars";
-import { Server } from "socket.io";  
-import { __dirname } from "./utils.js";              // Importamos la variable __dirname,
+import { __dirname, __filename } from "./utils.js";                           // Importamos la variable __dirname, de la configuracion de MULTER para poder subir archivos, LA variable dirname, es una variable de Node con un path aboluto a la carpeta que le indicamos.
 import path from "path";
+import { productsRouter } from "./routes/products.router.js";     // Importamos los endpoint Productos.
+import { cartsRouter } from "./routes/carts.router.js";           // Importamos los endpoint Carts.
+import { viewsRouter } from "./routes/viewsRouter.js";
+import { ProductManager } from "./productManager.js";
+import http from "http";
 
 
-const app = express();          // Asignamos el servidor a una variable.
-const port = 8080;
+const app = express();                                              // Asignamos la funcionaldiad del servidor en la app express.
+const port = 8080;   
+const httpServer = http.createServer(app);                          // Asignamos el N° de puerto a una varibale. 
+const socketServer = new Server(httpServer);                        // Guardamos nuestro servidor socket en una variable
+const productManager = new ProductManager("./products.json");
 
-/* --------- Middleware --------- */ 
-app.use(express.urlencoded({extended: true}));
-app.use(express.json());
-app.use(express.static('public'));
 
-/* INICIOOO Configuracion de Handlebars */
+
+
+
+// Middleware 
+app.use(express.json());                                        // Declaramos que el servidor utiliza formato JSON por defecto.
+app.use(express.urlencoded({extended: true}));                  // Declaramos que extendemos lo que recive por URL, para recivir datos complejos y porder mapearlos desde la URL.
+app.use(express.static("public"));                              // Usamos una carpeta public, para guardar archivos estaticos, donde puede acceder el usuario. El nombre del directorio no forma parte de la URL.
+
+//  Configuracion de Handlebars 
 app.engine("handlebars", handlebars.engine());      // Inicializamos el motor de plantilla. El engine de la app es el de handlebars.
 app.set("views", path.join(__dirname, "views"));    // Indicamos en que parte del proyecto se encuentran las vistas, usando la variable __dirname para usar rutas absolutas, seleccionado la carpeta(views) o archivo y no pifiarle a la direccion. El ultimo archivo es en que carpeta se encuentran las vistas.
 app.set("view engine", "handlebars");               // Indicamos que el motor que ya inicializamos es el que vamos a utilziar por defecto.
-/* FINNNN Configuracion de Handlebars */
+
+// Seteo de Rutas
+app.use("/api/products", productsRouter);                       // Le decimos a la app, que use todo lo que esta en la ruta api/products, lo maneja productsRouter.
+app.use("/api/carts", cartsRouter);                             // Le decimos a la app, que use todo lo que esta en la ruta api/carts, lo maneja cartsRouter.
+app.use("/", viewsRouter);
+app.use("/realTimeProducts", viewsRouter);
 
 
 
-
-// Ahora guardamos nuestro servidor HTTP en una variable
-const httpServer =  app.listen(port, () => {
-    console.log(`App listen on port ${port}  http://localhost:8080/ `)}); // Le decimos al servidor en que puerto recivir las peticiones.
-
-const socketServer = new Server(httpServer);    
-
-
- let dataProducts = [
-    {"id":1,"title":"producto prueba 1","description":"Este es un producto prueba","price":300,"thumbnail":"Sin imagen","code":"abc123","stock":80},
-    {"id":2,"title":"producto prueba","description":"Este es un producto prueba","price":200,"thumbnail":"Sin imagen","code":"abc123","stock":25}
-];
+// Guardamos nuestro servidor HTTP en una variable
+const httpServerListen = app.listen(port, ()=> {
+    console.log(`App listen on port: ${port}  http://localhost:${port} `);  // Le decimos al servidor en que puerto recivir las peticiones.
+});
+httpServerListen.on('error', error => console.log(`Server error: ${error}`));
 
 
-app.get("/", (req, res) => {
-    res.json(dataProducts)
+
+              // Creamos en nuevo servidor de Socket y lo guardamos en una variable. Le pasamos al servidor de socket el servidor de HTTP.
+
+// Coneccion con server socket
+socketServer.on("connection", (socket) => {   
+    // Cada vez que se crea y conecta un socket en el front para comunicar al back.
+    console.log("Se creo un canal de Socket" + socket.id);      // Mostramos en consola los canales de comunicacion establecidos.
+   
+    const { dataProducts } = productManager.getProducts(null);
+    socket.emit("getProducts", dataProducts);
 });
 
-
-app.get("/realTimeProducts", (req, res) => {
-    res.render("realTimeProducts");
-});
-
-socketServer.on("connection", (socket) => {
+// Websocket delete product
+socketServer.on("deleteProduct", async (id) => {
+    await productManager.deleteProduct(id);
     
-    console.log("User Conected");
+    // Brodcast y actualizacion a todos los clientes
+    const { dataProducts } =  productManager.getProducts(null);
+    socketServer.broadcast.emit("getProducts", dataProducts);
+});
 
-    socket.emit("viewProducts", dataProducts);
+// Agregamos productocs con Websocket
 
-    socket.on("addProduct", product => {
-        dataProducts.push(product);
-        socketServer.sockets.emit("viewProduct", JSON.stringify(dataProducts));
-    });
+socketServer.on("addProduct", async (product) => {
+    await productManager.addProduct(product);
 
-    socket.on("deleteProduct", product => {
-        dataProducts = dataProducts.filter(item => item != product) || null;
-        socketServer.sockets.emit("viewProducts", dataProducts);
-    });
-
-    socket.on("disconnect", ()=> {
-        console.log("User Disconected");
-    });
+ // Brodcast y actualizacion a todos los clientes
+ const { dataProducts } = productManager.getProducts(null);
+ socketServer.broadcast.emit("getProducts", dataProducts);
 });
 
 
-
-app.get("*", (req, res) => {
+app.get("*", (res, req) => {                                    // Si no machea con ninguna ruta entra a esta middleware default.
     return res.status(400).json({
-        status: "error",
-        msj: "No se encuentra ruta !!",
-        data: {},
+        status: "error",                                        // En caso positivo succes.
+        msj: "No se encuentra ruta URL",
+        data: {},                                               // En caso positivo serian los datos.
     });
 });
+

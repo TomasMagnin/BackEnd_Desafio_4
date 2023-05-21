@@ -1,19 +1,52 @@
-// Codigo de Front, para poder trabajar en el front
 const socket = io();
+const form = document.getElementById("form");
+let newProduct = {};
+form.addEventListener("submit", (event) {
+    event.preventDefault();
+    const title = form.elements.title.value;
+    const description = form.elements.description.value;
+    const price = form.elements.price.value;
+    const thumbnail = form.elements.thumbnail.value;
+    const code = form.elements.code.value;
+    const stock = form.elements.stock.value;
+    const category = form.elements.category.value;
+    const status = form.elements.status.value;
 
-const inputAdd = document.getElementById("inputAdd");
-const btnAdd = document.getElementById("btnAdd");
-const inputDelete = document.getElementById("inputDelete");
-const btnDelete = document.getElementById("btnDelete");
+    newProduct = {title, description, price, thumbnail, code, stock, category, status};
 
-btnAdd.addEventListener("click", () => {
-    socket.emit("addProduct", inputAdd.value);
+    // Front Envia
+    socket.emit("msg_from_client_to_server", newProduct);
+    form.reset();
 });
 
-btnDelete.addEventListener("click", () => {
-    socket.emit("deleteProduct", inputDelete.value);
+const deleteForm = document.getElementById("deleteForm");
+
+deleteForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const id = deleteForm.elements.id.value;
+    socket.emit("deleteProduct", id);
+    deleteForm.reset();
 });
 
-btnDelete.on("viewProducts", data => {
-    document.querySelector("p").innerText = data;
+
+
+// Recivimos del Front
+
+socket.on("updateProducts", (data) => {
+    const productList = document.getElementById("updateProducts");
+    productList.innerHTML = " ";
+    productList.innerHTML += `
+        ${data.productList.map((product) => `
+        <div class="card product__container" style="width: 14rem;">
+          <div>
+            <img src=${product.thumbnail} class="card-img-top" alt="foto de Product ${product.id}">
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">${product.title}</h3>
+            <p class="card-text">${product.description}</p>
+            <p class="card-text">${product.price}</p>
+          </div>
+        </div>
+        `).join("")}
+    `;
 });
