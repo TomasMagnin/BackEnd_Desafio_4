@@ -1,11 +1,11 @@
 import express from "express";                                    // Importamos el modulo de servidor en express.
-import { Server } from "socket.io";
+import { Server } from 'socket.io';
 import handlebars from "express-handlebars";
 import { __dirname, __filename } from "./utils.js";                           // Importamos la variable __dirname, de la configuracion de MULTER para poder subir archivos, LA variable dirname, es una variable de Node con un path aboluto a la carpeta que le indicamos.
 import path from "path";
 import { productsRouter } from "./routes/products.router.js";     // Importamos los endpoint Productos.
 import { cartsRouter } from "./routes/carts.router.js";           // Importamos los endpoint Carts.
-import { viewsRouter } from "./routes/viewsRouter.js";
+import { viewsRouter } from "./routes/views.router.js";
 import { ProductManager } from "./productManager.js";
 import http from "http";
 
@@ -23,7 +23,7 @@ const productManager = new ProductManager("./products.json");
 // Middleware 
 app.use(express.json());                                        // Declaramos que el servidor utiliza formato JSON por defecto.
 app.use(express.urlencoded({extended: true}));                  // Declaramos que extendemos lo que recive por URL, para recivir datos complejos y porder mapearlos desde la URL.
-app.use(express.static("public"));                              // Usamos una carpeta public, para guardar archivos estaticos, donde puede acceder el usuario. El nombre del directorio no forma parte de la URL.
+app.use(express.static("./public"));                              // Usamos una carpeta public, para guardar archivos estaticos, donde puede acceder el usuario. El nombre del directorio no forma parte de la URL.
 
 //  Configuracion de Handlebars 
 app.engine("handlebars", handlebars.engine());      // Inicializamos el motor de plantilla. El engine de la app es el de handlebars.
@@ -36,52 +36,48 @@ app.use("/api/carts", cartsRouter);                             // Le decimos a 
 app.use("/", viewsRouter);
 app.use("/realTimeProducts", viewsRouter);
 
-
-
-// Guardamos nuestro servidor HTTP en una variable
-const httpServerListen = app.listen(port, ()=> {
+app.listen(port, ()=> {
     console.log(`App listen on port: ${port}  http://localhost:${port} `);  // Le decimos al servidor en que puerto recivir las peticiones.
 });
-httpServerListen.on('error', error => console.log(`Server error: ${error}`));
 
+socketServer.on("connection", (socket) => {
+    console.log(`Nueva coneccion establecida con el cliene ID + ${socket.id}`);
 
+    // Recivimos del Back
+    socket.on("front a servidor", async (newProduct) => {
+        try{
+            await productManager.addProduct(newProduct);
+            const dataProducts = await productManager.getProducts();
 
-              // Creamos en nuevo servidor de Socket y lo guardamos en una variable. Le pasamos al servidor de socket el servidor de HTTP.
+            // Responde el servidor
+            socketServer.emit("updatedProducts", {dataProducts})
+        }
+        catch (error) {
+            console.log(error);
+        }
+    });
 
-// Coneccion con server socket
-socketServer.on("connection", (socket) => {   
-    // Cada vez que se crea y conecta un socket en el front para comunicar al back.
-    console.log("Se creo un canal de Socket" + socket.id);      // Mostramos en consola los canales de comunicacion establecidos.
-   
-    const { dataProducts } = productManager.getProducts(null);
-    socket.emit("getProducts", dataProducts);
+    socket.on("deleteProduct", async (id) => {
+        try {
+            await productManager.deleteProduct(id);
+            socket.emit('productDeleted', { message: 'Producto eliminado exitosamente' })
+            
+            // Brodcast y actualizacion a todos los clientes
+            const dataProducts =  productManager.getProducts();
+            socketServer.emit("updatedProducts", { dataProducts });
+        } catch (error) {
+            console.log("Error al eliminar producto");
+            socket.emit('productDeleteError', { error: 'Ocurrió un error al eliminar el producto' });
+        }
+    });
 });
 
-// Websocket delete product
-socketServer.on("deleteProduct", async (id) => {
-    await productManager.deleteProduct(id);
-    
-    // Brodcast y actualizacion a todos los clientes
-    const { dataProducts } =  productManager.getProducts(null);
-    socketServer.broadcast.emit("getProducts", dataProducts);
-});
-
-// Agregamos productocs con Websocket
-
-socketServer.on("addProduct", async (product) => {
-    await productManager.addProduct(product);
-
- // Brodcast y actualizacion a todos los clientes
- const { dataProducts } = productManager.getProducts(null);
- socketServer.broadcast.emit("getProducts", dataProducts);
-});
 
 
-app.get("*", (res, req) => {                                    // Si no machea con ninguna ruta entra a esta middleware default.
+app.get("*", (req, res) => {                                    // Si no machea con ninguna ruta entra a esta middleware default.
     return res.status(400).json({
         status: "error",                                        // En caso positivo succes.
         msj: "No se encuentra ruta URL",
         data: {},                                               // En caso positivo serian los datos.
     });
 });
-
