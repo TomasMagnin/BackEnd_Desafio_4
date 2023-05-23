@@ -1,7 +1,7 @@
 const socket = io();
-const form = document.getElementById("form");
-let newProduct = {};
-form.addEventListener("submit", (event) {
+const form = document.getElementById('form');
+let newProduct ={};
+form.addEventListener('submit', (event) => {
     event.preventDefault();
     const title = form.elements.title.value;
     const description = form.elements.description.value;
@@ -11,32 +11,30 @@ form.addEventListener("submit", (event) {
     const stock = form.elements.stock.value;
     const category = form.elements.category.value;
     const status = form.elements.status.value;
-
+    
     newProduct = {title, description, price, thumbnail, code, stock, category, status};
 
-    // Front Envia
-    socket.emit("msg_from_client_to_server", newProduct);
+    // Enviamos este formulario desde el Front
+    socket.emit("front a servidor", newProduct);
     form.reset();
 });
 
-const deleteForm = document.getElementById("deleteForm");
+const deleteForm = document.getElementById('deleteForm');
 
-deleteForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const id = deleteForm.elements.id.value;
-    socket.emit("deleteProduct", id);
-    deleteForm.reset();
+deleteForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const id = deleteForm.elements.id.value;
+  socket.emit('deleteProduct', id);
+  deleteForm.reset();
 });
 
 
-
 // Recivimos del Front
-
-socket.on("updateProducts", (data) => {
-    const productList = document.getElementById("updateProducts");
-    productList.innerHTML = " ";
+socket.on('updatedProducts', (data) => {
+    const productList = document.getElementById('productList');
+    productList.innerHTML = '';
     productList.innerHTML += `
-        ${data.productList.map((product) => `
+      ${data.productList.map((product) => `
         <div class="card product__container" style="width: 14rem;">
           <div>
             <img src=${product.thumbnail} class="card-img-top" alt="foto de Product ${product.id}">
@@ -47,6 +45,6 @@ socket.on("updateProducts", (data) => {
             <p class="card-text">${product.price}</p>
           </div>
         </div>
-        `).join("")}
+      `).join('')}
     `;
-});
+  });

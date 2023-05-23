@@ -59,14 +59,15 @@ socketServer.on("connection", (socket) => {
 
     socket.on("deleteProduct", async (id) => {
         try {
-            await productManager.deleteProduct(id);
+            const parseId = parseInt(id, 10); 
+            await productManager.deleteProduct(parseId);
             socket.emit('productDeleted', { message: 'Producto eliminado exitosamente' })
             
             // Brodcast y actualizacion a todos los clientes
             const dataProducts =  productManager.getProducts();
             socketServer.emit("updatedProducts", { dataProducts });
         } catch (error) {
-            console.log("Error al eliminar producto");
+            console.log("Error al eliminar producto", error);
             socket.emit('productDeleteError', { error: 'Ocurrió un error al eliminar el producto' });
         }
     });
