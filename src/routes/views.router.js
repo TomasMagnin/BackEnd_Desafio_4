@@ -10,7 +10,7 @@ viewsRouter.get("/", async (req, res) => {
     res.render("home", {products});
 });
 
-viewsRouter.get("realTimeProducts", async (req, res) => {
+viewsRouter.get("/realTimeProducts", async (req, res) => {
     const products = await productManager.getProducts();
     res.render("realTimeProducts", {products});
 });
